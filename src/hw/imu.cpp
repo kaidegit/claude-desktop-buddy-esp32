@@ -1,5 +1,7 @@
 #include "hw/imu.h"
 #include "hw/pins.h"
+
+#if BOARD_HAS_IMU
 #include <Wire.h>
 #include <SensorQMI8658.hpp>
 
@@ -31,3 +33,14 @@ void hwImuAccel(float* ax, float* ay, float* az) {
   // detector wants az < -0.7 for face-DOWN. Flip the sign.
   *az = -d.z;
 }
+
+#else  // No IMU
+
+bool hwImuInit() { return true; }
+void hwImuAccel(float* ax, float* ay, float* az) {
+  *ax = 0.0f;
+  *ay = 0.0f;
+  *az = 1.0f;  // screen-up neutral; prevents false face-down
+}
+
+#endif

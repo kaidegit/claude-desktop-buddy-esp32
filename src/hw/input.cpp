@@ -4,26 +4,29 @@
 #include "hw/power.h"
 #include <Arduino.h>
 
-#if BOARD_TOUCH_CST92XX
-  #include <Wire.h>
-  #include "TouchDrvCSTXXX.hpp"
-#else
-  #include <Arduino_DriveBus_Library.h>
+#if BOARD_HAS_TOUCH
+  #if BOARD_TOUCH_CST92XX
+    #include <Wire.h>
+    #include "TouchDrvCSTXXX.hpp"
+  #else
+    #include <Arduino_DriveBus_Library.h>
+  #endif
 #endif
 
 static HwBtn   s_a, s_b;
 static HwTouch s_tp;
 static uint8_t s_axpEvt = 0;
 
-#if BOARD_TOUCH_CST92XX
-static TouchDrvCST92xx s_cst;
-#else
-static std::shared_ptr<Arduino_IIC_DriveBus> s_iicBus;
-static std::unique_ptr<Arduino_IIC>          s_ft3168;
+#if BOARD_HAS_TOUCH
+  #if BOARD_TOUCH_CST92XX
+  static TouchDrvCST92xx s_cst;
+  #else
+  static std::shared_ptr<Arduino_IIC_DriveBus> s_iicBus;
+  static std::unique_ptr<Arduino_IIC>          s_ft3168;
+  #endif
+  static volatile bool s_tpIrqFlag = false;
+  static void IRAM_ATTR onTouchIrq() { s_tpIrqFlag = true; }
 #endif
-static volatile bool                          s_tpIrqFlag = false;
-
-static void IRAM_ATTR onTouchIrq() { s_tpIrqFlag = true; }
 
 bool HwBtn::pressedFor(uint32_t ms) {
   return isPressed && (millis() - pressedAt) >= ms;
@@ -38,6 +41,7 @@ bool hwInputInit() {
   pinMode(PIN_KEY_BOOT, INPUT_PULLUP);   // External R8 10K already pulls high; INPUT_PULLUP is harmless
 #endif
 
+#if BOARD_HAS_TOUCH
 #if BOARD_TOUCH_CST92XX
   // CST92xx @ 0x5A via SensorLib. Reset is handled by hwExpanderResetSequence()
   // (TP_RST is shared with LCD_RESET on 1.75C), so pass rstPin=-1 to skip the
@@ -64,6 +68,10 @@ bool hwInputInit() {
   Serial.println("hwInput: FT3168 init failed");
   return false;
 #endif
+#else
+  (void)0;
+#endif
+  return true;
 }
 
 static void scanKey1() {
@@ -129,6 +137,7 @@ static void scanAxp() {
 }
 #endif
 
+#if BOARD_HAS_TOUCH
 static void scanTouch() {
   // Poll when IRQ fires OR when a finger was down last frame — both FT3168
   // and CST92xx only reliably IRQ on state edges, so a drag wouldn't advance
@@ -206,6 +215,7 @@ static void scanTouch() {
   }
 #endif
 }
+#endif
 
 void hwInputUpdate() {
   scanKey1();
@@ -217,7 +227,9 @@ void hwInputUpdate() {
 #if BOARD_BTN_THIRD
   scanBootKey();
 #endif
+#if BOARD_HAS_TOUCH
   scanTouch();
+#endif
 }
 
 #if BOARD_BTN_SWAP_AB
@@ -235,4 +247,10 @@ uint8_t hwAxpBtnEvent() {
 }
 
 const HwTouch& hwTouch() { return s_tp; }
-bool hwTouchIrqPending() { return s_tpIrqFlag; }
+bool hwTouchIrqPending() {
+#if BOARD_HAS_TOUCH
+  return s_tpIrqFlag;
+#else
+  return false;
+#endif
+}

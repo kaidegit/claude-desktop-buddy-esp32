@@ -3,14 +3,20 @@
 #include <Arduino.h>
 
 static Arduino_DataBus*  s_bus    = nullptr;
-#if BOARD_DISPLAY_CO5300
-static Arduino_CO5300*   s_gfx    = nullptr;
-#else
-static Arduino_SH8601*   s_gfx    = nullptr;
-#endif
+static Arduino_GFX*      s_gfx    = nullptr;
 static Arduino_Canvas*   s_canvas = nullptr;
 
 static const uint8_t BRIGHT_LUT[5] = { 50, 100, 150, 200, 255 };
+
+static inline void gfxSetBrightness(uint8_t v) {
+#if BOARD_DISPLAY_ST7735
+  (void)v;
+#elif BOARD_DISPLAY_CO5300
+  static_cast<Arduino_CO5300*>(s_gfx)->setBrightness(v);
+#else
+  static_cast<Arduino_SH8601*>(s_gfx)->setBrightness(v);
+#endif
+}
 
 #if BOARD_DISPLAY_SH8601_VENDOR_INIT
 // LVGL demo SH8601 init for the 2.16 panel revision.
@@ -48,6 +54,13 @@ static void sh8601_vendor_init(Arduino_DataBus* bus) {
 #endif
 
 bool hwDisplayInit() {
+#if BOARD_DISPLAY_ST7735
+  // ST7735 on a classic 4-wire SPI bus. The panel's native RAM is 128×160;
+  // rotation=1 gives a 160×128 landscape logical surface that matches our canvas.
+  s_bus = new Arduino_HWSPI(PIN_LCD_DC, PIN_LCD_CS, PIN_LCD_SCLK, PIN_LCD_MOSI, -1, &SPI, true);
+  s_gfx = new Arduino_ST7735(s_bus, PIN_LCD_RESET, BOARD_DISPLAY_ROTATION,
+                             false, 128, 160, 0, 0, 0, 0, true);
+#else
   s_bus = new Arduino_ESP32QSPI(
     PIN_LCD_CS, PIN_LCD_SCLK, PIN_LCD_SDIO0, PIN_LCD_SDIO1,
     PIN_LCD_SDIO2, PIN_LCD_SDIO3);
@@ -61,10 +74,15 @@ bool hwDisplayInit() {
 #else
   s_gfx = new Arduino_SH8601(s_bus, GFX_NOT_DEFINED, 0, LCD_W_PHYS, LCD_H_PHYS);
 #endif
+#endif
   s_canvas = new Arduino_Canvas(HW_W, HW_H, s_gfx);
   // canvas->begin() internally calls gfx->begin() which calls bus init.
   // Calling them separately would double-init the SPI bus → ESP_ERR_INVALID_STATE.
+#if BOARD_DISPLAY_ST7735
+  if (!s_canvas->begin(10000000L)) { Serial.println("hwDisplay: canvas begin failed"); return false; }
+#else
   if (!s_canvas->begin()) { Serial.println("hwDisplay: canvas begin failed"); return false; }
+#endif
   // UTF-8 decode for u8g2 CJK fonts — without this, print() treats each
   // byte of a multi-byte codepoint as its own glyph lookup → mojibake.
   s_canvas->setUTF8Print(true);
@@ -83,9 +101,13 @@ bool hwDisplayInit() {
   // the controller had at power-up.
   s_gfx->fillScreen(0x0000);
 #else
-  s_gfx->setBrightness(0);   // black first frame to avoid white flash
+  #if !BOARD_DISPLAY_ST7735
+  gfxSetBrightness(0);   // black first frame to avoid white flash
   delay(20);
-  s_gfx->setBrightness(150);  // default mid-brightness; main may override later
+  gfxSetBrightness(150);  // default mid-brightness; main may override later
+  #else
+  delay(20);                   // ST7735 has no setBrightness(); just settle
+  #endif
 #endif
   return true;
 }
@@ -94,12 +116,18 @@ Arduino_Canvas* hwCanvas() { return s_canvas; }
 
 void hwDisplayBrightness(uint8_t lvl) {
   if (lvl > 4) lvl = 4;
-  s_gfx->setBrightness(BRIGHT_LUT[lvl]);
+#if !BOARD_DISPLAY_ST7735
+  gfxSetBrightness(BRIGHT_LUT[lvl]);
+#else
+  (void)lvl;  // no software backlight control on this ST7735 module
+#endif
 }
 
 void hwDisplaySleep(bool off) {
   if (off) {
-    s_gfx->setBrightness(0);
+#if !BOARD_DISPLAY_ST7735
+    gfxSetBrightness(0);
+#endif
     s_gfx->displayOff();
   } else {
     s_gfx->displayOn();
@@ -235,7 +263,7 @@ void hwDisplayPush() {
   // panel. Inset well below the rounded bezel corners. Less intrusive
   // than a full frame; reads as a "notification dot".
   if (s_borderAlertOn) {
-    const int BAR_W = 200;
+    const int BAR_W = (LCD_W_PHYS >= 200) ? 200 : (LCD_W_PHYS - 20);
     const int BAR_H = 8;
     const int BAR_Y = 18;
     const int BAR_X = (LCD_W_PHYS - BAR_W) / 2;

@@ -1,9 +1,13 @@
 #include "hw/power.h"
 #include "hw/pins.h"
 #include <Wire.h>
-#include <XPowersLib.h>
 
+#if BOARD_HAS_AXP2101
+#include <XPowersLib.h>
 static XPowersPMU s_pmu;
+#endif
+
+#if BOARD_HAS_AXP2101
 
 bool hwPowerInit() {
   if (!s_pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, PIN_I2C_SDA, PIN_I2C_SCL)) {
@@ -85,3 +89,22 @@ bool hwAxpPekeyLongPress() {
 }
 
 XPowersPMU* hwPmuRef() { return &s_pmu; }
+
+#else  // No AXP2101
+
+bool hwPowerInit() { return true; }
+
+HwBattery hwBattery() {
+  HwBattery b = {};
+  return b;
+}
+
+void hwPowerOff() {
+  // No PMU to shut down; enter deep sleep as the closest approximation.
+  esp_deep_sleep_start();
+}
+
+bool hwAxpPekeyShortPress() { return false; }
+bool hwAxpPekeyLongPress()  { return false; }
+
+#endif

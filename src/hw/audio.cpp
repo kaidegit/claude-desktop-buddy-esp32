@@ -1,6 +1,8 @@
 #include "hw/audio.h"
 #include "hw/pins.h"
 #include <Arduino.h>
+
+#if BOARD_HAS_AUDIO_CODEC
 #include <Wire.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -111,3 +113,42 @@ void hwBeep(uint16_t freqHz, uint16_t durMs) {
   BeepReq r{ freqHz, durMs };
   xQueueSend(s_beepQ, &r, 0);
 }
+
+#elif BOARD_HAS_BUZZER
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
+
+static QueueHandle_t s_beepQ = nullptr;
+struct BeepReq { uint16_t freq; uint16_t dur; };
+
+static void beepTask(void*) {
+  BeepReq r;
+  pinMode(PIN_BUZZER, OUTPUT);
+  while (xQueueReceive(s_beepQ, &r, portMAX_DELAY) == pdTRUE) {
+    tone(PIN_BUZZER, r.freq, r.dur);
+    delay(r.dur);
+    noTone(PIN_BUZZER);
+  }
+}
+
+bool hwAudioInit() {
+  s_beepQ = xQueueCreate(8, sizeof(BeepReq));
+  if (!s_beepQ) return false;
+  xTaskCreatePinnedToCore(beepTask, "beep", 2048, nullptr, 5, nullptr, tskNO_AFFINITY);
+  return true;
+}
+
+void hwBeep(uint16_t freqHz, uint16_t durMs) {
+  if (!s_beepQ) return;
+  BeepReq r{ freqHz, durMs };
+  xQueueSend(s_beepQ, &r, 0);
+}
+
+#else  // No audio hardware
+
+bool hwAudioInit() { return true; }
+void hwBeep(uint16_t, uint16_t) {}
+
+#endif
