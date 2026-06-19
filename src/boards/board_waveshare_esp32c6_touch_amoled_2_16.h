@@ -70,6 +70,9 @@
 #define BOARD_KEY1_ACTIVE_HIGH     1
 #define BOARD_HAS_KEY2             1
 
+// UI orientation: 2.16" C6 upscales the original 184×224 portrait layout.
+#define BOARD_DISPLAY_LANDSCAPE_UI 0
+
 // Credits page
 #define BOARD_MODEL_LINE1  "Waveshare ESP32-C6"
 #define BOARD_MODEL_LINE2  "Touch AMOLED 2.16"

@@ -69,6 +69,9 @@
 #define BOARD_DISPLAY_ROTATION            3
 #define BOARD_CO5300_MADCTL               0
 
+// UI orientation: Xueersi is a landscape 160×128 panel.
+#define BOARD_DISPLAY_LANDSCAPE_UI 1
+
 // Credits-page hardware identification (two short lines).
 #define BOARD_MODEL_LINE1  "Xueersi ESP32"
 #define BOARD_MODEL_LINE2  ""

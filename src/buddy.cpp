@@ -1,6 +1,7 @@
 #include "buddy.h"
 #include "buddy_common.h"
 #include "hw/display.h"          // for HW_W
+#include "ui_layout.h"
 #include <Arduino_GFX_Library.h>
 #include <string.h>
 
@@ -10,10 +11,10 @@ enum { B_SLEEP, B_IDLE, B_BUSY, B_ATTENTION, B_CELEBRATE, B_DIZZY, B_HEART };
 // ──────────────── shared geometry ────────────────
 const int BUDDY_X_CENTER = HW_W / 2;   // canvas horizontal center
 const int BUDDY_CANVAS_W = HW_W;   // canvas width — clears must span full canvas
-const int BUDDY_Y_BASE   = 30;
-const int BUDDY_Y_OVERLAY = 6;
-const int BUDDY_CHAR_W   = 6;
-const int BUDDY_CHAR_H   = 8;
+const int BUDDY_Y_BASE    = UI_BUDDY_Y_BASE;
+const int BUDDY_Y_OVERLAY = UI_BUDDY_Y_OVERLAY;
+const int BUDDY_CHAR_W    = 6;
+const int BUDDY_CHAR_H    = UI_BUDDY_CHAR_H;
 
 // ──────────────── shared colors ────────────────
 const uint16_t BUDDY_BG     = 0x0000;
@@ -155,7 +156,7 @@ static uint8_t lastDrawnSpecies = 0xFF;
 void buddyInvalidate() { lastDrawnState = 0xFF; }
 
 void buddySetPeek(bool peek) {
-  uint8_t s = peek ? 1 : 2;
+  uint8_t s = peek ? 1 : UI_BUDDY_HOME_SCALE;
   if (s == _scale) return;
   _scale = s;
   buddyInvalidate();
@@ -195,9 +196,9 @@ void buddyTick(uint8_t personaState) {
   lastDrawnState = personaState;
   lastDrawnSpecies = currentSpeciesIdx;
 
-  // Clear the whole render strip — at 2× the body reaches y≈126, at 1× ≈82.
+  // Clear the whole render strip — height depends on UI layout/scale.
   tgt()->fillRect(0, 0, BUDDY_CANVAS_W,
-                  (BUDDY_Y_BASE + 5 * BUDDY_CHAR_H + 12) * _scale, BUDDY_BG);
+                  UI_BUDDY_CLEAR_H * _scale, BUDDY_BG);
 
   const Species* sp = SPECIES_TABLE[currentSpeciesIdx];
   if (sp->states[personaState]) sp->states[personaState](tickCount);

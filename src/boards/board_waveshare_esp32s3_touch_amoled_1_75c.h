@@ -77,6 +77,9 @@
 // currently drive (hwRtc* stubs return zero; info page just shows uptime).
 #define BOARD_HAS_PCF85063  0
 
+// UI orientation: 1.75C letterboxes the original 184×224 portrait layout.
+#define BOARD_DISPLAY_LANDSCAPE_UI 0
+
 // Credits-page hardware identification (two short lines).
 #define BOARD_MODEL_LINE1  "Waveshare ESP32-S3"
 #define BOARD_MODEL_LINE2  "Touch AMOLED 1.75C"

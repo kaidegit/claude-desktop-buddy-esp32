@@ -1,5 +1,6 @@
 #include "character.h"
 #include "hw/display.h"
+#include "ui_layout.h"
 #include <Arduino_GFX_Library.h>
 #include <LittleFS.h>
 #include <AnimatedGIF.h>
@@ -39,7 +40,7 @@ static int         gifX = 0, gifY = 0, gifW = 0, gifH = 0;
 // Peek mode pins the GIF bottom to the info-panel top (y=70) so the pet
 // sits on the panel edge regardless of canvas height. Home mode centers
 // in the upper 140px. No padding assumed in the source art.
-static const int   PEEK_TOP = 70;
+static const int   PEEK_TOP = UI_PEEK_TOP;
 static bool        peekMode = false;
 // Draw target — defaults to the canvas; characterRenderTo() can retarget
 // to any Arduino_GFX surface (Canvas inherits from Arduino_GFX).
@@ -53,7 +54,7 @@ static void gifPlace() {
   int outW = peekMode ? gifW / 2 : gifW;
   int outH = peekMode ? gifH / 2 : gifH;
   gifX = (tgt()->width() - outW) / 2;
-  gifY = peekMode ? (PEEK_TOP - outH) / 2 : (140 - outH) / 2;
+  gifY = peekMode ? (PEEK_TOP - outH) / 2 : (UI_HOME_GIF_TOP - outH) / 2;
 }
 static uint32_t    nextFrameAt = 0;
 static uint32_t    animPauseUntil = 0;
@@ -119,7 +120,7 @@ static void gifDrawCb(GIFDRAW* d) {
   if (peekMode) {
     if (srcY & 1) return;
     int y = gifY + (srcY >> 1);
-    if (y < 0 || y >= PEEK_TOP) return;
+    if (y < 0 || y >= UI_PEEK_TOP) return;
     int x0 = gifX + (d->iX >> 1);
     int w  = d->iWidth >> 1;
     for (int i = 0; i < w; i++) put(x0 + i, y, src[i << 1]);
@@ -352,7 +353,7 @@ void characterTick() {
 
     // Clear a band around the text, not the whole sprite — keeps overlays
     // like the approval panel and the HUD untouched.
-    int cy = peekMode ? 35 : 60;
+    int cy = peekMode ? UI_TEXT_PEEK_CY : UI_TEXT_HOME_CY;
     tgt()->fillRect(0, cy - 14, tgt()->width(), 28, pal.bg);
 
     const char* line = ts.frames[textFrame];

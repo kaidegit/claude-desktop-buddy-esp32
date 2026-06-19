@@ -74,6 +74,9 @@
 #define BOARD_KEY1_ACTIVE_HIGH     0
 #define BOARD_HAS_KEY2             0
 
+// UI orientation: 1.8" AMOLED uses the original portrait layout.
+#define BOARD_DISPLAY_LANDSCAPE_UI 0
+
 // Credits-page hardware identification (two short lines).
 #define BOARD_MODEL_LINE1  "Waveshare ESP32-S3"
 #define BOARD_MODEL_LINE2  "Touch AMOLED 1.8"
