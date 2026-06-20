@@ -1482,6 +1482,7 @@ void loop() {
   //   USB plugged: never (clock can stay visible indefinitely)
   //   Battery + clock visible: 5 min (CLOCK_OFF_MS_BAT)
   //   Battery + non-clock idle: 30 s (SCREEN_OFF_MS)
+#if !BOARD_DISABLE_SLEEP
   if (!screenOff && !inPrompt && !_onUsb) {
     uint32_t idleMs    = millis() - lastInteractMs;
     uint32_t threshold = clocking ? CLOCK_OFF_MS_BAT : SCREEN_OFF_MS;
@@ -1490,6 +1491,7 @@ void loop() {
       screenOff = true;
     }
   }
+#endif
 
   // AMOLED burn-in mitigation: every 5 min force a full canvas redraw.
   // OLED pixels degrade where they stay lit at constant value; redrawing
