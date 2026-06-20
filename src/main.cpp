@@ -692,18 +692,47 @@ void drawInfo() {
 }
 
 
-// Greedy word-wrap into fixed-width rows. Continuation rows get a leading
-// space. Returns number of rows written.
-// UTF-8 continuation byte = 0b10xxxxxx. Pull `take` back so we never
-// land mid-codepoint when hard-breaking long Chinese sentences.
-static uint8_t _utf8SafeTake(const char* w, uint8_t take, uint8_t wlen) {
-  if (take == 0 || take >= wlen) return take;
-  while (take > 0 && ((uint8_t)w[take] & 0xC0) == 0x80) take--;
-  return take;
+// Pixel width of the first `len` UTF-8 bytes of `s` in the currently
+// selected font. Call after setFont/setTextSize so getTextBounds uses
+// the right metrics. `len` may cut inside a codepoint; we null-terminate
+// at `len` and let getTextBounds render up to that point.
+static int measureTextWidth(Arduino_GFX* gfx, const char* s, uint8_t len) {
+  char buf[92];
+  if (len >= sizeof(buf)) len = sizeof(buf) - 1;
+  memcpy(buf, s, len);
+  buf[len] = 0;
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(buf, 0, 0, &x1, &y1, &w, &h);
+  return (int)w;
 }
 
-static uint8_t wrapInto(const char* in, char out[][48], uint8_t maxRows, uint8_t width) {
+// Returns how many leading bytes of `w` fit in `roomPx` without splitting
+// a UTF-8 codepoint. Uses the current font for accurate width.
+static uint8_t _utf8SafeTakePx(Arduino_GFX* gfx, const char* w, int roomPx, uint8_t wlen) {
+  uint8_t taken = 0;
+  while (taken < wlen) {
+    uint8_t c = (uint8_t)w[taken];
+    uint8_t cl;
+    if (c < 0x80) cl = 1;
+    else if ((c & 0xE0) == 0xC0) cl = 2;
+    else if ((c & 0xF0) == 0xE0) cl = 3;
+    else if ((c & 0xF8) == 0xF0) cl = 4;
+    else { taken++; continue; }                // invalid lead, skip
+    if (taken + cl > wlen) break;
+    int px = measureTextWidth(gfx, w, taken + cl);
+    if (px > roomPx) break;
+    taken += cl;
+  }
+  return taken;
+}
+
+// Greedy word-wrap into fixed-width rows. Continuation rows get a leading
+// space. Returns number of rows written. `maxPx` is the pixel-width budget
+// for each row, measured against the currently selected font.
+static uint8_t wrapInto(Arduino_GFX* gfx, const char* in, char out[][48], uint8_t maxRows, int maxPx) {
   uint8_t row = 0, col = 0;
+  int rowPx = 0;
   const char* p = in;
   while (*p && row < maxRows) {
     while (*p == ' ') p++;                     // skip leading spaces
@@ -712,24 +741,37 @@ static uint8_t wrapInto(const char* in, char out[][48], uint8_t maxRows, uint8_t
     while (*p && *p != ' ') p++;
     uint8_t wlen = p - w;
     if (wlen == 0) break;
-    uint8_t need = (col > 0 ? 1 : 0) + wlen;
-    if (col + need > width) {
+    int wordPx = measureTextWidth(gfx, w, wlen);
+    int spacePx = 0;
+    if (col > 0 && !(col == 1 && out[row][0] == ' ')) {
+      // need a separating space; measure it rather than assume 6 px
+      spacePx = measureTextWidth(gfx, " ", 1);
+    }
+    if (rowPx + spacePx + wordPx > maxPx) {
       out[row][col] = 0;
       if (++row >= maxRows) return row;
       out[row][0] = ' '; col = 1;              // continuation indent
+      rowPx = measureTextWidth(gfx, " ", 1);
     }
-    if (col > 1 || (col == 1 && out[row][0] != ' ')) out[row][col++] = ' ';
+    if (col > 1 || (col == 1 && out[row][0] != ' ')) {
+      out[row][col++] = ' ';
+      rowPx += measureTextWidth(gfx, " ", 1);
+    }
     else if (col == 1 && row > 0) {}           // already have the indent space
     // hard-break words that still don't fit, on UTF-8 char boundaries
-    while (wlen > width - col) {
-      uint8_t take = _utf8SafeTake(w, width - col, wlen);
+    while (wordPx > maxPx - rowPx) {
+      int room = maxPx - rowPx;
+      uint8_t take = _utf8SafeTakePx(gfx, w, room, wlen);
       if (take == 0) take = 1;                 // safety: avoid infinite loop
       memcpy(&out[row][col], w, take); col += take; w += take; wlen -= take;
       out[row][col] = 0;
       if (++row >= maxRows) return row;
-      out[row][0] = ' '; col = 1;
+      out[row][0] = ' '; col = 1;              // continuation indent
+      rowPx = measureTextWidth(gfx, " ", 1);
+      wordPx = measureTextWidth(gfx, w, wlen);
     }
     memcpy(&out[row][col], w, wlen); col += wlen;
+    rowPx += wordPx;
   }
   if (col > 0 && row < maxRows) { out[row][col] = 0; row++; }
   return row;
@@ -976,7 +1018,7 @@ void drawHUD() {
   const Palette& p = characterPalette();
   // chill7 font: glyphs ~7 px tall but baseline-positioned (setCursor
   // is the baseline, not the top). Allow ~10 px line spacing.
-  const int SHOW = UI_HUD_LINES, LH = UI_HUD_LH, WIDTH = UI_HUD_WIDTH;
+  const int SHOW = UI_HUD_LINES, LH = UI_HUD_LH, WIDTH_PX = SAFE_W;
   const int AREA = SHOW * LH + 4;
   spr.fillRect(0, H - AREA, W, AREA, p.bg);
 
@@ -1002,10 +1044,20 @@ void drawHUD() {
   static char disp[32][48];
   static uint8_t srcOf[32];
   uint8_t nDisp = 0;
-  for (uint8_t i = 0; i < tama.nLines && nDisp < 32; i++) {
-    uint8_t got = wrapInto(tama.lines[i], &disp[nDisp], 32 - nDisp, WIDTH);
-    for (uint8_t j = 0; j < got; j++) srcOf[nDisp + j] = i;
-    nDisp += got;
+  // The desktop bridge may split a single status sentence into short lines.
+  // Re-join them with spaces and re-wrap to the full screen width so the
+  // HUD uses the whole safe area instead of leaving 1/3 of it blank.
+  {
+    static char concatBuf[8 * 92 + 8];
+    int pos = 0;
+    for (uint8_t i = 0; i < tama.nLines; i++) {
+      if (i > 0 && pos < (int)sizeof(concatBuf) - 1) concatBuf[pos++] = ' ';
+      const char* s = tama.lines[i];
+      while (*s && pos < (int)sizeof(concatBuf) - 1) concatBuf[pos++] = *s++;
+    }
+    concatBuf[pos] = 0;
+    nDisp = wrapInto(&spr, concatBuf, disp, 32, WIDTH_PX);
+    for (uint8_t j = 0; j < nDisp; j++) srcOf[j] = tama.nLines - 1;
   }
 
   uint8_t maxBack = (nDisp > SHOW) ? (nDisp - SHOW) : 0;

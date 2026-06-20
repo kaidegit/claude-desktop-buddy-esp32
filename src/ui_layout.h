@@ -35,9 +35,8 @@ constexpr int UI_APPROVAL_HINT_Y       = 34;
 constexpr int UI_APPROVAL_ACTION_Y     = 46;
 
 // HUD transcript.
-constexpr int UI_HUD_LINES       = 2;
+constexpr int UI_HUD_LINES       = 3;
 constexpr int UI_HUD_LH          = 10;
-constexpr int UI_HUD_WIDTH       = 18;   // bytes/glyphs per line
 
 // Menus: use full safe width and a smaller row height so 10 settings fit.
 constexpr int UI_MENU_MW         = SAFE_W;                  // 144
@@ -91,7 +90,6 @@ constexpr int UI_APPROVAL_ACTION_Y     = 58;
 
 constexpr int UI_HUD_LINES       = 3;
 constexpr int UI_HUD_LH          = 10;
-constexpr int UI_HUD_WIDTH       = 22;
 
 constexpr int UI_MENU_MW         = 118;
 constexpr int UI_MENU_ROW_H      = 14;
