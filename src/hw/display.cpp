@@ -213,12 +213,16 @@ void hwDisplayPush() {
   s_gfx->draw16bitRGBBitmap(0, 0, s_frameBuf, LCD_W_PHYS, LCD_H_PHYS);
 #else
 #if BOARD_DISPLAY_PUSH_STREAMED
+#if !BOARD_DISPLAY_SH8601
+#error "BOARD_DISPLAY_PUSH_STREAMED currently requires BOARD_DISPLAY_SH8601"
+#endif
+  auto* streamedGfx = static_cast<Arduino_SH8601*>(s_gfx);
   // Streamed 2× upscale: one continuous QSPI transaction.
   // CS stays asserted across all rows so the panel never sees bus idle
   // (which causes per-row draws to fail on this 2.16 panel revision).
-  s_gfx->startWrite();
-  s_gfx->writeAddrWindow(BOARD_DISPLAY_OFFSET_X, BOARD_DISPLAY_OFFSET_Y,
-                         BOARD_HW_W * 2, BOARD_HW_H * 2);
+  streamedGfx->startWrite();
+  streamedGfx->writeAddrWindow(BOARD_DISPLAY_OFFSET_X, BOARD_DISPLAY_OFFSET_Y,
+                               BOARD_HW_W * 2, BOARD_HW_H * 2);
   for (int y = 0; y < HW_H; y++) {
     uint16_t* row = src + y * HW_W;
     for (int x = 0; x < HW_W; x++) {
@@ -232,10 +236,10 @@ void hwDisplayPush() {
     }
     // Each canvas row writes twice for 2× vertical expansion.
     // Width is HW_W*2 px = 368 px = 736 bytes.
-    s_gfx->writeBytes((uint8_t*)s_lineBuf, HW_W * 2 * 2);
-    s_gfx->writeBytes((uint8_t*)s_lineBuf, HW_W * 2 * 2);
+    streamedGfx->writeBytes((uint8_t*)s_lineBuf, HW_W * 2 * 2);
+    streamedGfx->writeBytes((uint8_t*)s_lineBuf, HW_W * 2 * 2);
   }
-  s_gfx->endWrite();
+  streamedGfx->endWrite();
 #elif BOARD_DISPLAY_SCALE == 1
   // Native one-shot blit. Used on QSPI panels that can't tolerate
   // many small draw calls per frame and where memory budget can't

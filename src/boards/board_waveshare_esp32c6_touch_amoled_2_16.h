@@ -63,6 +63,7 @@
 #define BOARD_LCD_RST_VIA_PMU      1
 #define BOARD_AXP_PWRON_4S_OFF     1
 #define BOARD_DISPLAY_CO5300       0
+#define BOARD_DISPLAY_SH8601       1
 #define BOARD_DISPLAY_LETTERBOX    0
 #define BOARD_TOUCH_CST92XX        1
 #define BOARD_BTN_SWAP_AB          0

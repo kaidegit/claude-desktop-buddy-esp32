@@ -51,6 +51,7 @@
 
 // Display: Arduino_SH8601 — canvas is upscaled 2× to physical.
 #define BOARD_DISPLAY_CO5300     0
+#define BOARD_DISPLAY_SH8601     1
 #define BOARD_DISPLAY_LETTERBOX  0
 
 // Touch: FT3168 @ 0x38 via Arduino_DriveBus (Arduino_FT3x68)
