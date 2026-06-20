@@ -56,6 +56,9 @@
 #define BOARD_HAS_IMU              0
 #define BOARD_AXP_ENABLE_AUX_LDOS  0
 
+// No PMU: report a fixed full-battery reading on the info page.
+#define BOARD_BATTERY_ALWAYS_FULL  1
+
 // Display flags
 #define BOARD_DISPLAY_SH8601_VENDOR_INIT  0
 #define BOARD_DISPLAY_ST7735              1

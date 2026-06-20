@@ -8,8 +8,9 @@ displays permission prompts, recent messages, and other interactions.
 
 This is a port of [anthropics/claude-desktop-buddy](https://github.com/anthropics/claude-desktop-buddy)
 (originally targeting M5StickC Plus) to four Waveshare ESP32 AMOLED
-boards. The BLE wire protocol is unchanged — same pairing, same desktop
-apps, just a larger screen.
+boards plus the **Xueersi ESP32** dev board. The BLE wire protocol is
+unchanged — same pairing, same desktop apps, just a larger screen (or a
+smaller TFT on the Xueersi).
 
 > **Building your own device?** You don't need any of the code here. See
 > **[REFERENCE.md](REFERENCE.md)** for the wire protocol: Nordic UART
@@ -17,30 +18,31 @@ apps, just a larger screen.
 
 ## Supported boards
 
-All four run the **same main.cpp / UI** — board-specific wiring, drivers and
+All five run the **same main.cpp / UI** — board-specific wiring, drivers and
 canvas→panel scaling are isolated in `src/hw/` + one header per board
 under `src/boards/`.
 
-| | [ESP32-S3-Touch-AMOLED-1.8](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.8) | [ESP32-S3-Touch-AMOLED-1.75C](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75C) | [ESP32-C6-Touch-AMOLED-2.16](https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-2.16) | [ESP32-S3-Touch-AMOLED-2.16](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-2.16) |
-| --- | --- | --- | --- | --- |
-| MCU | ESP32-S3R8 (8 MB OPI PSRAM, 8 MB flash) | same | ESP32-C6FH8 (160 MHz RISC-V single-core, 8 MB flash, **no PSRAM**) | ESP32-S3R8 (8 MB OPI PSRAM, 8 MB flash) |
-| Panel | 1.8" **rectangular** 368×448 AMOLED | 1.75" **round** 466×466 AMOLED | 2.16" **rounded-square** 480×480 AMOLED | 2.16" **rounded-square** 480×480 AMOLED (**rotated 90°**) |
-| Display driver | SH8601 (QSPI) | CO5300 (QSPI) | SH8601 (QSPI) | CO5300 (QSPI) |
-| Touch | FT3168 @ 0x38 | CST92xx @ 0x5A | CST9217 @ 0x5A | CST9217 @ 0x5A |
-| GPIO expander | TCA9554 (LCD/TP resets routed through it) | none — resets are direct GPIOs | none — resets are direct GPIOs | none — resets are direct GPIOs |
-| RTC | PCF85063 (I²C) | none — software clock synced from desktop | PCF85063 (I²C) | PCF85063 (I²C) |
-| IMU | QMI8658 | same | same | same |
-| PMU | AXP2101 | same | same | same |
-| Audio | ES8311 + amp + speaker | same | ES8311 + ES7210 (output + mic codec) | same |
-| Buttons | Key1 (GPIO0 BOOT) + AXP PEK | same (physical layout swapped; corrected in firmware) | three: PWR/IO10/BOOT; PWR is active-HIGH via MOSFET inverter + AXP PWRON | three: PWR/IO18/BOOT; PWR is active-HIGH via BSS138 inverter |
-| Canvas → panel | 184×224 canvas → **2× nearest-neighbor** → 368×448 | 184×224 canvas → **1.5× bilinear** → 276×336 centred in 466×466 (black border) | 184×224 canvas → **2× nearest-neighbor** → 368×448 centred at (56, 16) in 480×480 (56 px L/R / 16 px T/B black border) | 184×224 canvas → **2× nearest-neighbor** → 368×448 centred at (56, 16) in 480×480 (56 px L/R / 16 px T/B black border) |
+| | [ESP32-S3-Touch-AMOLED-1.8](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.8) | [ESP32-S3-Touch-AMOLED-1.75C](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75C) | [ESP32-C6-Touch-AMOLED-2.16](https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-2.16) | [ESP32-S3-Touch-AMOLED-2.16](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-2.16) | **Xueersi ESP32** |
+| --- | --- | --- | --- | --- | --- |
+| MCU | ESP32-S3R8 (8 MB OPI PSRAM, 8 MB flash) | same | ESP32-C6FH8 (160 MHz RISC-V single-core, 8 MB flash, **no PSRAM**) | ESP32-S3R8 (8 MB OPI PSRAM, 8 MB flash) | ESP32-WROVER-B (4 MB flash, **no PSRAM**) |
+| Panel | 1.8" **rectangular** 368×448 AMOLED | 1.75" **round** 466×466 AMOLED | 2.16" **rounded-square** 480×480 AMOLED | 2.16" **rounded-square** 480×480 AMOLED (**rotated 90°**) | 1.8" **landscape** 160×128 TFT |
+| Display driver | SH8601 (QSPI) | CO5300 (QSPI) | SH8601 (QSPI) | CO5300 (QSPI) | ST7735 (SPI) |
+| Touch | FT3168 @ 0x38 | CST92xx @ 0x5A | CST9217 @ 0x5A | CST9217 @ 0x5A | none |
+| GPIO expander | TCA9554 (LCD/TP resets routed through it) | none — resets are direct GPIOs | none — resets are direct GPIOs | none — resets are direct GPIOs | none |
+| RTC | PCF85063 (I²C) | none — software clock synced from desktop | PCF85063 (I²C) | PCF85063 (I²C) | none — software clock synced from desktop |
+| IMU | QMI8658 | same | same | same | none |
+| PMU | AXP2101 | same | same | same | none |
+| Audio | ES8311 + amp + speaker | same | ES8311 + ES7210 (output + mic codec) | same | passive buzzer only |
+| Buttons | Key1 (GPIO0 BOOT) + AXP PEK | same (physical layout swapped; corrected in firmware) | three: PWR/IO10/BOOT; PWR is active-HIGH via MOSFET inverter + AXP PWRON | three: PWR/IO18/BOOT; PWR is active-HIGH via BSS138 inverter | two: KEY1 (GPIO34) + KEY2 (GPIO12), both active-low |
+| Canvas → panel | 184×224 canvas → **2× nearest-neighbor** → 368×448 | 184×224 canvas → **1.5× bilinear** → 276×336 centred in 466×466 (black border) | 184×224 canvas → **2× nearest-neighbor** → 368×448 centred at (56, 16) in 480×480 (56 px L/R / 16 px T/B black border) | 184×224 canvas → **2× nearest-neighbor** → 368×448 centred at (56, 16) in 480×480 (56 px L/R / 16 px T/B black border) | **160×128 canvas 1:1** → 160×128 panel |
 
-Internal canvas is **184×224** on all four. The 1.75C rounds the content
-inside its circular bezel; keeping the logical canvas identical means
+Internal canvas is **184×224** on the four AMOLED boards and **160×128**
+on the Xueersi ESP32. The 1.75C rounds the content inside its circular
+bezel; keeping the logical canvas identical on the AMOLED boards means
 UI code, fonts and all buddy rendering are completely board-agnostic.
 
-The firmware targets ESP32-S3 and ESP32-C6 with Arduino framework 3.x via the
-[pioarduino](https://github.com/pioarduino/platform-espressif32) platform.
+The firmware targets ESP32, ESP32-S3 and ESP32-C6 with Arduino framework 3.x
+via the [pioarduino](https://github.com/pioarduino/platform-espressif32) platform.
 
 ## Flashing
 
@@ -60,6 +62,9 @@ pio run -e waveshare-esp32c6-touch-amoled-2-16 -t upload
 
 # 2.16" rounded-square AMOLED (ESP32-S3)
 pio run -e waveshare-esp32s3-touch-amoled-2-16 -t upload
+
+# Xueersi ESP32 (ESP32-WROVER-B, 160×128 ST7735 TFT)
+pio run -e xueersi-esp32 -t upload
 ```
 
 If you're starting from a previously-flashed device (e.g. the factory
@@ -87,6 +92,9 @@ building anything:
 
    # ESP32-C6 board
    esptool.py -c esp32c6 -p /dev/ttyUSB0 -b 921600 @flash_project_args
+
+   # Xueersi ESP32 (ESP32)
+   esptool.py -c esp32 -p /dev/ttyUSB0 -b 921600 @flash_project_args
    ```
 
    On Windows use `-p COMx` instead of `/dev/ttyUSB0`.
@@ -113,8 +121,8 @@ building anything:
 `main.cpp` and `buddies/` stay untouched.
 
 Once running you can also wipe everything from the device itself:
-**hold the A button (Key1 on 1.8/1.75C, PWR on the 2.16 boards) →
-settings → reset → factory reset → tap twice**.
+**hold the A button (Key1 on 1.8/1.75C, PWR on the 2.16 boards, KEY1 on
+Xueersi) → settings → reset → factory reset → tap twice**.
 
 ## Pairing
 
@@ -180,11 +188,27 @@ The board has three physical keys:
 | **Shake**                | dizzy                |             |             | —           |
 | **Face-down**            | nap (energy refills) |             |             |             |
 
+### Xueersi ESP32 controls
+
+The board has two active-low physical keys:
+- **KEY1** (GPIO34) — primary action / confirm (= A button)
+- **KEY2** (GPIO12) — secondary / back / scroll (= B button)
+
+There is no AXP power key, so long-press shutdown is not available; power
+cycling is done by unplugging the USB cable or battery.
+
+|                          | Normal               | Pet         | Info        | Approval    |
+| ------------------------ | -------------------- | ----------- | ----------- | ----------- |
+| **KEY1** (GPIO34)        | next screen          | next screen | next screen | **approve** |
+| **KEY2** (GPIO12, short) | scroll transcript    | next page   | next page   | **deny**    |
+| **Hold KEY1**            | menu                 | menu        | menu        | menu        |
+
 ### Touch (all boards)
 
-Touch is supplemental — keys remain primary:
+Touch is supplemental — keys remain primary. The Xueersi ESP32 has no
+touch controller, so all navigation is via KEY1 / KEY2:
 
-- **Swipe up / down** — cycle through all 9 pages (Normal → Pet ×2 → Info ×6). The A button (Key1 on S3 1.8/1.75C, PWR on the 2.16 boards) short-press remains a coarser 3-mode jumper.
+- **Swipe up / down** — cycle through all 9 pages (Normal → Pet ×2 → Info ×6). The A button (Key1 on S3 1.8/1.75C, PWR on the 2.16 boards, KEY1 on Xueersi) short-press remains a coarser 3-mode jumper.
 - **Swipe left / right** (clock home screen) — cycle ASCII species
 - **Approval screen** — tap upper half = approve, lower half = deny
 - **Menu / Settings / Reset** — tap a row to select+confirm in one go
@@ -198,7 +222,7 @@ Touch is supplemental — keys remain primary:
 - **Battery + other screens** — auto-off after **30 seconds**
 - **Approval prompt up** — never auto-offs
 
-Any key press or screen tap wakes the panel.
+Any key press wakes the panel; boards with touch also wake on a screen tap.
 
 ## Notable differences from the M5StickC original
 
@@ -214,6 +238,10 @@ Any key press or screen tap wakes the panel.
   and `promptHint` are replaced with random Matrix-rain symbols rather
   than rendering as garbage glyphs
 - **ESP32-S3 2.16" rotation** — the Waveshare ESP32-S3-Touch-AMOLED-2.16 panel is physically mounted 90° rotated from its natural orientation; this is handled in firmware via MADCTL=0xA0 and is transparent to the UI code
+- **Xueersi ESP32** — uses a small 160×128 landscape ST7735 TFT with a
+  1:1 logical canvas, no touch, no PMU/IMU/RTC, and a passive buzzer
+  instead of the ES8311 codec; because it has no PSRAM the firmware uses
+  NimBLE for the BLE stack
 
 ## Per-state animations
 

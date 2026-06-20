@@ -15,6 +15,7 @@ jobs:
         waveshare-esp32s3-touch-amoled-1-75c
         waveshare-esp32c6-touch-amoled-2-16
         waveshare-esp32s3-touch-amoled-2-16
+        xueersi-esp32
 
     steps:
       - name: Checkout

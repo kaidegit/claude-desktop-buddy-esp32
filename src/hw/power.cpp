@@ -96,6 +96,9 @@ bool hwPowerInit() { return true; }
 
 HwBattery hwBattery() {
   HwBattery b = {};
+#if BOARD_BATTERY_ALWAYS_FULL
+  b.pct = 100;
+#endif
   return b;
 }
 
