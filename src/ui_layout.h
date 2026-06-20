@@ -29,10 +29,10 @@ constexpr int UI_PET_CLEAR_TOP   = 0;
 
 // Approval bottom overlay.
 constexpr int UI_APPROVAL_H      = 52;
-constexpr int UI_APPROVAL_TOOL_Y_SHORT = 20;
+constexpr int UI_APPROVAL_TOOL_Y_SHORT = 16;
 constexpr int UI_APPROVAL_TOOL_Y_LONG  = 24;
-constexpr int UI_APPROVAL_HINT_Y       = 34;
-constexpr int UI_APPROVAL_ACTION_Y     = 46;
+constexpr int UI_APPROVAL_HINT_Y       = 32;
+constexpr int UI_APPROVAL_ACTION_Y     = 40;
 
 // HUD transcript.
 constexpr int UI_HUD_LINES       = 2;
@@ -83,6 +83,7 @@ constexpr int UI_PET_TOP         = 70;
 constexpr int UI_PET_CLEAR_TOP   = 70;
 
 constexpr int UI_APPROVAL_H      = 78;
+constexpr int UI_APPROVAL_TIMER_Y      = 4;
 constexpr int UI_APPROVAL_TOOL_Y_SHORT = 14;
 constexpr int UI_APPROVAL_TOOL_Y_LONG  = 18;
 constexpr int UI_APPROVAL_HINT_Y       = 34;

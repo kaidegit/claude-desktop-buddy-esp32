@@ -1153,6 +1153,7 @@ void loop() {
 
   // BtnA: step through fake scenarios
   // Prompt arrival: beep, reset response flag
+  bool hadPrompt = lastPromptId[0] != '\0';
   if (strcmp(tama.promptId, lastPromptId) != 0) {
     strncpy(lastPromptId, tama.promptId, sizeof(lastPromptId)-1);
     lastPromptId[sizeof(lastPromptId)-1] = 0;
@@ -1168,6 +1169,17 @@ void loop() {
       applyDisplayMode();
       characterInvalidate();
       if (buddyMode) buddyInvalidate();
+    } else if (hadPrompt) {
+      // Prompt dismissed. The approval overlay is taller than the normal HUD/
+      // clock footer, so leftover ink can remain after the desktop clears the
+      // prompt. Force a full canvas clear/redraw to erase it.
+      if (buddyMode) {
+        const Palette& p = characterPalette();
+        spr.fillScreen(p.bg);
+        buddyInvalidate();
+      } else {
+        characterInvalidate();
+      }
     }
   }
 
