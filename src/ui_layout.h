@@ -28,14 +28,14 @@ constexpr int UI_PET_TOP         = UI_HEADER_H;             // 18
 constexpr int UI_PET_CLEAR_TOP   = 0;
 
 // Approval bottom overlay.
-constexpr int UI_APPROVAL_H      = 54;
+constexpr int UI_APPROVAL_H      = 52;
 constexpr int UI_APPROVAL_TOOL_Y_SHORT = 20;
 constexpr int UI_APPROVAL_TOOL_Y_LONG  = 24;
 constexpr int UI_APPROVAL_HINT_Y       = 34;
 constexpr int UI_APPROVAL_ACTION_Y     = 46;
 
 // HUD transcript.
-constexpr int UI_HUD_LINES       = 3;
+constexpr int UI_HUD_LINES       = 2;
 constexpr int UI_HUD_LH          = 10;
 
 // Menus: use full safe width and a smaller row height so 10 settings fit.
@@ -47,7 +47,7 @@ constexpr int UI_MENU_HINT_H     = 12;
 // Pet rendering in landscape: keep everything scaled to fit in the content area.
 constexpr int UI_PEEK_TOP        = UI_CONTENT_BOTTOM;       // 104
 constexpr int UI_HOME_GIF_TOP    = UI_PEEK_TOP;
-constexpr int UI_BUDDY_Y_BASE    = 30;
+constexpr int UI_BUDDY_Y_BASE    = 24;
 constexpr int UI_BUDDY_Y_OVERLAY = 6;
 constexpr int UI_BUDDY_HOME_SCALE= 1;
 constexpr int UI_BUDDY_CHAR_H    = 8;
