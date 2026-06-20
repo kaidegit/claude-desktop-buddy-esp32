@@ -59,7 +59,7 @@ bool hwDisplayInit() {
   // rotation=1 gives a 160×128 landscape logical surface that matches our canvas.
   s_bus = new Arduino_HWSPI(PIN_LCD_DC, PIN_LCD_CS, PIN_LCD_SCLK, PIN_LCD_MOSI, -1, &SPI, true);
   s_gfx = new Arduino_ST7735(s_bus, PIN_LCD_RESET, BOARD_DISPLAY_ROTATION,
-                             false, 128, 160, 0, 0, 0, 0, true);
+                             false, 128, 160, 0, 0, 0, 0, false);
 #else
   s_bus = new Arduino_ESP32QSPI(
     PIN_LCD_CS, PIN_LCD_SCLK, PIN_LCD_SDIO0, PIN_LCD_SDIO1,
