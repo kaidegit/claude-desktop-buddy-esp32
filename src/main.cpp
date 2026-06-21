@@ -1118,6 +1118,17 @@ void setup() {
     delay(1800);
   }
 
+  // Boot screen is done: erase it from the canvas before the main loop takes
+  // over.  The first home-screen frame only repaints its own regions (buddy
+  // strip, GIF area, HUD, etc.), so any splash text outside those regions
+  // would otherwise remain visible as ghosting.
+  {
+    const Palette& p = characterPalette();
+    spr.fillScreen(p.bg);
+  }
+  characterInvalidate();
+  if (buddyMode) buddyInvalidate();
+
   Serial.printf("buddy: %s\n", buddyMode ? "ASCII mode" : "GIF character loaded");
 }
 
